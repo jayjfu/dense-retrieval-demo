@@ -108,9 +108,12 @@ For rerank only,
 
 ## Evaluation
 
-Results on the MS MARCO passage ranking task:
+We use the official evaluation script here:
+```bash
+python ./benchmarks/msmarco-passage-ranking/eval/ms_marco_eval.py $reference_file $candidate_file
+```
 
-*(Work in Progress)*
+Results on the MS MARCO passage ranking task: *(Work in Progress)*
 
 | Model   | Retrieval + Rerank | Rerank |
 |---------|--------------------|--------|
