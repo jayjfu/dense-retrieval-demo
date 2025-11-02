@@ -17,8 +17,6 @@ dense-retrieval-demo
 │   ├── README.md
 │   └── msmarco-passage-ranking
 │       ├── eval
-│       │   ├── bert.ranking_results.dev.tsv
-│       │   ├── hf_bert.ranking_results.dev.tsv
 │       │   └── ms_marco_eval.py
 │       ├── get_dataset.sh
 │       └── tokenizer.py
@@ -50,7 +48,6 @@ dense-retrieval-demo
         └── utils
             ├── __init__.py
             └── bert_tokenization.py
-
 ```
 
 ## Data Preparation
