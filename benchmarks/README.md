@@ -2,7 +2,6 @@
 
 ## Data Preparation
 
----
 - Step1: download dataset:
 ```bash
 cd msmarco-passage-ranking
@@ -15,7 +14,6 @@ python tokenizer.py
 
 ## Evaluation
 
----
 We use the official evaluation script here:
 ```bash
 # https://github.com/microsoft/MSMARCO-Passage-Ranking/blob/master/ms_marco_eval.py
