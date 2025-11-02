@@ -1,0 +1,1 @@
+from .bert_tokenization import BertTokenizer
