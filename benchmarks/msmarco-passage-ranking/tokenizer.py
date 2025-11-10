@@ -6,24 +6,24 @@ from tqdm import tqdm
 from multiprocessing import Pool, set_start_method, current_process
 
 
-parser = argparse.ArgumentParser(description='prepare jsonl data for msmacro passage ranking')
+parser = argparse.ArgumentParser(description="prepare jsonl data for msmacro passage ranking")
 parser.add_argument('--hf_tokenizer_name', default='bert-base-uncased', type=str)
-parser.add_argument('--data_dir', default='./data', type=str)
-parser.add_argument('--train_file', default='triples.train.small.tsv', type=str)
+parser.add_argument('--data_dir', default="./data", type=str)
+parser.add_argument('--train_file', default="triples.train.small.tsv", type=str)
 parser.add_argument('--max_length', default=128, type=int)
-parser.add_argument('--output_path', default='./data/processed', type=str)
-parser.add_argument('--output_file', default='ms_train.jsonl', type=str)
+parser.add_argument('--output_path', default="./data/processed", type=str)
+parser.add_argument('--output_file', default="ms_train.jsonl", type=str)
 parser.add_argument('--num_processes', default=8, type=int)
 parser.add_argument('--mp_chunk_size', default=100_000, type=int)
 args = parser.parse_args()
 
 def process_line(line):
-    query, pos, neg = line.strip().split("\t")
+    query, pos, neg = line.strip().split('\t')
     encoded = tokenizer([query, pos, neg], truncation=True, max_length=max_length)
     data = {
-        'query': encoded['input_ids'][0],
-        'positive': encoded['input_ids'][1],
-        'negative': encoded['input_ids'][2]
+        "query": encoded['input_ids'][0],
+        "positive": encoded['input_ids'][1],
+        "negative": encoded['input_ids'][2]
     }
 
     with open(output_shard_file, 'a') as f_out:
@@ -34,14 +34,14 @@ def init_worker(tokenizer_name, max_length_, output_dir_):
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
     max_length = max_length_
     pid = current_process().pid
-    output_shard_file = os.path.join(output_dir_, f'ms_train_shard_{pid}.jsonl')
+    output_shard_file = os.path.join(output_dir_, f"ms_train_shard_{pid}.jsonl")
 
 def merge_shards(output_dir, output_file):
     merged_file = os.path.join(output_dir, output_file)
     shard_files = [
         os.path.join(output_dir, f_name)
         for f_name in os.listdir(output_dir)
-        if f_name.startswith('ms_train_shard_')
+        if f_name.startswith("ms_train_shard_")
     ]
 
     with open(merged_file, 'w') as f_out:
@@ -55,7 +55,7 @@ def merge_shards(output_dir, output_file):
 
 def prepare_json(args):
     train_data = os.path.join(args.data_dir, args.train_file)
-    output_dir = os.path.join(args.output_path, 'train')
+    output_dir = os.path.join(args.output_path, "train")
     os.makedirs(output_dir, exist_ok=True)
 
     with open(train_data, 'rb') as f:

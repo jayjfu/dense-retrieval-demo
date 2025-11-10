@@ -12,18 +12,18 @@ import faiss
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-parser = argparse.ArgumentParser(description='encoding for inference')
-parser.add_argument('--model_config', default='../data/config.json', type=str)
-parser.add_argument('--model_weights', default='../checkpoints/bert_msmarco_model.pt', type=str)
-parser.add_argument('--vocab_file', default='../data/vocab.txt', type=str)
+parser = argparse.ArgumentParser(description="encoding for inference")
+parser.add_argument('--model_config', default="../data/config.json", type=str)
+parser.add_argument('--model_weights', default="../checkpoints/bert_msmarco_model.pt", type=str)
+parser.add_argument('--vocab_file', default="../data/vocab.txt", type=str)
 parser.add_argument('--max_length', default=128, type=int)
-parser.add_argument('--file_path', default='../../../benchmarks/msmarco-passage-ranking/data/', type=str)
-parser.add_argument('--file_name', default='queries.dev.tsv', type=str)
-parser.add_argument('--qrels_dev_file', default='qrels.dev.tsv', type=str)
-parser.add_argument('--index_path', default='../../../benchmarks/msmarco-passage-ranking/index/', type=str)
-parser.add_argument('--index_file', default='passages_100k_index.faiss', type=str)
-parser.add_argument('--eval_path', default='../../../benchmarks/msmarco-passage-ranking/eval/', type=str)
-parser.add_argument('--prediction_file', default='bert.ranking_results.dev.tsv', type=str)
+parser.add_argument('--file_path', default="../../../benchmarks/msmarco-passage-ranking/data/", type=str)
+parser.add_argument('--file_name', default="queries.dev.tsv", type=str)
+parser.add_argument('--qrels_dev_file', default="qrels.dev.tsv", type=str)
+parser.add_argument('--index_path', default="../../../benchmarks/msmarco-passage-ranking/index/", type=str)
+parser.add_argument('--index_file', default="passages_100k_index.faiss", type=str)
+parser.add_argument('--eval_path', default="../../../benchmarks/msmarco-passage-ranking/eval/", type=str)
+parser.add_argument('--prediction_file', default="bert.ranking_results.dev.tsv", type=str)
 parser.add_argument('--top_k', default=10, type=str)
 args = parser.parse_args()
 
@@ -33,7 +33,7 @@ def main():
 
     qid2pid_df = pd.read_csv(qrels_path, sep="\t", header=None, names=['qid', 'zero', 'pid', 'label'])
     qid2query_df = pd.read_csv(query_path, sep="\t", header=None, names=['qid', 'query_text'])
-    merged_df = qid2pid_df.merge(qid2query_df, on="qid", how="left")
+    merged_df = qid2pid_df.merge(qid2query_df, on='qid', how='left')
     dataset = merged_df[['qid', 'query_text']].to_dict(orient='records')
 
     tokenizer = BertTokenizer(os.path.join(SCRIPT_DIR, args.vocab_file))

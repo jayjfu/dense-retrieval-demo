@@ -1,4 +1,4 @@
-PROJECT_ROOT='../src/dense-retrieval-demo'
+PROJECT_ROOT="../src/dense-retrieval-demo"
 cd $PROJECT_ROOT || exit
 
 # Indexing
