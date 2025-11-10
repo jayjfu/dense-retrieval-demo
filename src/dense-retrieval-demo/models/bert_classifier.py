@@ -22,4 +22,4 @@ class BertForSequenceClassification(nn.Module):
         loss_fn = nn.CrossEntropyLoss()
         loss = loss_fn(logits, labels)
 
-        return {'logits': logits, 'loss': loss}
+        return {"logits": logits, "loss": loss}

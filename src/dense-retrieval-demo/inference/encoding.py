@@ -12,15 +12,15 @@ import faiss
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-parser = argparse.ArgumentParser(description='encoding for inference')
-parser.add_argument('--model_config', default='../data/config.json', type=str)
-parser.add_argument('--model_weights', default='../checkpoints/bert_msmarco_model.pt', type=str)
-parser.add_argument('--file_path', default='../../../benchmarks/msmarco-passage-ranking/data/', type=str)
-parser.add_argument('--file_name', default='collection.tsv', type=str)
-parser.add_argument('--vocab_file', default='../data/vocab.txt', type=str)
+parser = argparse.ArgumentParser(description="encoding for inference")
+parser.add_argument('--model_config', default="../data/config.json", type=str)
+parser.add_argument('--model_weights', default="../checkpoints/bert_msmarco_model.pt", type=str)
+parser.add_argument('--file_path', default="../../../benchmarks/msmarco-passage-ranking/data/", type=str)
+parser.add_argument('--file_name', default="ollection.tsv", type=str)
+parser.add_argument('--vocab_file', default="../data/vocab.txt", type=str)
 parser.add_argument('--max_length', default=128, type=int)
-parser.add_argument('--index_path', default='../../../benchmarks/msmarco-passage-ranking/index/', type=str)
-parser.add_argument('--index_file', default='passages_100k_index.faiss', type=str)
+parser.add_argument('--index_path', default="../../../benchmarks/msmarco-passage-ranking/index/", type=str)
+parser.add_argument('--index_file', default="passages_100k_index.faiss", type=str)
 args = parser.parse_args()
 
 def main():

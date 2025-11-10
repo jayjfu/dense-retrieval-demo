@@ -11,16 +11,16 @@ import faiss
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-parser = argparse.ArgumentParser(description='encoding for inference')
-parser.add_argument('--saved_model', default='../checkpoints/bert-msmarco/checkpoint-5000', type=str)
+parser = argparse.ArgumentParser(description="encoding for inference")
+parser.add_argument('--saved_model', default="../checkpoints/bert-msmarco/checkpoint-5000", type=str)
 parser.add_argument('--max_length', default=128, type=int)
-parser.add_argument('--file_path', default='../../../benchmarks/msmarco-passage-ranking/data/', type=str)
-parser.add_argument('--file_name', default='queries.dev.tsv', type=str)
-parser.add_argument('--qrels_dev_file', default='qrels.dev.tsv', type=str)
-parser.add_argument('--index_path', default='../../../benchmarks/msmarco-passage-ranking/index/', type=str)
-parser.add_argument('--index_file', default='hf_passages_100k_index.faiss', type=str)
-parser.add_argument('--eval_path', default='../../../benchmarks/msmarco-passage-ranking/eval/', type=str)
-parser.add_argument('--prediction_file', default='hf_bert.ranking_results.dev.tsv', type=str)
+parser.add_argument('--file_path', default="../../../benchmarks/msmarco-passage-ranking/data/", type=str)
+parser.add_argument('--file_name', default="queries.dev.tsv", type=str)
+parser.add_argument('--qrels_dev_file', default="qrels.dev.tsv", type=str)
+parser.add_argument('--index_path', default="../../../benchmarks/msmarco-passage-ranking/index/", type=str)
+parser.add_argument('--index_file', default="hf_passages_100k_index.faiss", type=str)
+parser.add_argument('--eval_path', default="../../../benchmarks/msmarco-passage-ranking/eval/", type=str)
+parser.add_argument('--prediction_file', default="hf_bert.ranking_results.dev.tsv", type=str)
 parser.add_argument('--top_k', default=10, type=str)
 args = parser.parse_args()
 
@@ -28,9 +28,9 @@ def main():
     qrels_path = os.path.join(str(SCRIPT_DIR), args.file_path, args.qrels_dev_file)
     query_path = os.path.join(str(SCRIPT_DIR), args.file_path, args.file_name)
 
-    qid2pid_df = pd.read_csv(qrels_path, sep="\t", header=None, names=['qid', 'zero', 'pid', 'label'])
-    qid2query_df = pd.read_csv(query_path, sep="\t", header=None, names=['qid', 'query_text'])
-    merged_df = qid2pid_df.merge(qid2query_df, on="qid", how="left")
+    qid2pid_df = pd.read_csv(qrels_path, sep='\t', header=None, names=['qid', 'zero', 'pid', 'label'])
+    qid2query_df = pd.read_csv(query_path, sep='\t', header=None, names=['qid', 'query_text'])
+    merged_df = qid2pid_df.merge(qid2query_df, on='qid', how='left')
     dataset = datasets.Dataset.from_pandas(merged_df)
 
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')

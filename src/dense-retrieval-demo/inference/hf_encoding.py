@@ -10,13 +10,13 @@ import faiss
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-parser = argparse.ArgumentParser(description='encoding for inference')
-parser.add_argument('--saved_model', default='../checkpoints/bert-msmarco/checkpoint-5000', type=str)
-parser.add_argument('--file_path', default='../../../benchmarks/msmarco-passage-ranking/data/', type=str)
-parser.add_argument('--file_name', default='collection.tsv', type=str)
+parser = argparse.ArgumentParser(description="encoding for inference")
+parser.add_argument('--saved_model', default="../checkpoints/bert-msmarco/checkpoint-5000", type=str)
+parser.add_argument('--file_path', default="../../../benchmarks/msmarco-passage-ranking/data/", type=str)
+parser.add_argument('--file_name', default="collection.tsv", type=str)
 parser.add_argument('--max_length', default=128, type=int)
-parser.add_argument('--index_path', default='../../../benchmarks/msmarco-passage-ranking/index/', type=str)
-parser.add_argument('--index_file', default='hf_passages_100k_index.faiss', type=str)
+parser.add_argument('--index_path', default="../../../benchmarks/msmarco-passage-ranking/index/", type=str)
+parser.add_argument('--index_file', default="hf_passages_100k_index.faiss", type=str)
 args = parser.parse_args()
 
 def main():
@@ -44,7 +44,7 @@ def main():
         embeddings = (outputs.last_hidden_state * batch['attention_mask'].unsqueeze(-1)).sum(1)
         embeddings = embeddings / batch['attention_mask'].sum(1, keepdim=True)
 
-        return {'embeddings': embeddings.cpu().numpy()}
+        return {"embeddings": embeddings.cpu().numpy()}
     emb_dataset = dataset.map(gen_embeddings, batched=True, batch_size=64)
 
     embeddings = np.vstack(emb_dataset['embeddings'])

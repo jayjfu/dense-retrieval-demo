@@ -113,15 +113,18 @@ We use the official evaluation script here:
 python ./benchmarks/msmarco-passage-ranking/eval/ms_marco_eval.py $reference_file $candidate_file
 ```
 
-Results on the MS MARCO passage ranking task: *(Work in Progress)*
+MRR@10 (Dev) results of  on the MS MARCO passage ranking task: *(Work in Progress)*
 
-| Model   | Retrieval + Rerank | Rerank |
-|---------|--------------------|--------|
-| Model_1 | -                  | -      |
-| Model_2 | -                  | -      |
+| Model                                | Retrieval + Rerank | Rerank Only |
+|--------------------------------------|--------------------|-------------|
+| BERT_base (classifier head only)     | -                  | -           |
+| BERT_base (encoder and classifier)   | -                  | -           |
+| custom_BERT (classifier head only)   | -                  | -           |
+| custom_BERT (encoder and classifier) | -                  | -           |
+
+Note: Here, we use the small training set (triples.train.small.tar.gz) and set max_length=128 to improve training performance.
 
 ## Scripts:
-
 
 - Training: scripts/training_pipeline.sh
 - Inference: scripts/hf_inference_pipeline.sh, scripts/inference_pipeline.sh
