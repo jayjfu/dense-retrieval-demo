@@ -69,14 +69,25 @@ bash get_pretrained.sh
 Train a standard BERT classification model using Hugging Face:
 ```bash
 # Training w/ HF
-python ./src/dense-retrieval-demo/hf_train.py
+python ./src/dense-retrieval-demo/hf_train.py \
+  --batch_size 128 \
+  --lr 5e-6 \
+  --num_epochs 2 \
+  --save_steps 20_000 \
+  --no_resume
 ```
 
 ### Custom BERT
 Train a custom BERT classification model:
 ```bash
 # Training a custom 
-python ../src/dense-retrieval-demo/train.py
+python ./src/dense-retrieval-demo/train.py \
+  --batch_size 128 \
+  --lr 2e-5 \
+  --num_epochs 2 \
+  --logging_steps 2_000 \
+  --save_steps 20_000 \
+  --no_resume
 ```
 
 ## Inference
@@ -122,13 +133,13 @@ MRR@10 (Dev) results of  on the MS MARCO passage ranking task: *(Work in Progres
 | custom_BERT (classifier head only)   | -                  | -           |
 | custom_BERT (encoder and classifier) | -                  | -           |
 
-Note: Here, we use the small training set (triples.train.small.tar.gz) and set max_length=128 to improve training performance.
+Note: Here, we use the small training set `triples.train.small.tar.gz` and set max_length=128 to improve training performance.
 
 ## Scripts:
 
-- Training: scripts/training_pipeline.sh
-- Inference: scripts/hf_inference_pipeline.sh, scripts/inference_pipeline.sh
-- Evaluation script: scripts/evaluation.sh
+- Training: `scripts/training_pipeline.sh`
+- Inference: `scripts/hf_inference_pipeline.sh`, `scripts/inference_pipeline.sh`
+- Evaluation `script: scripts/evaluation.sh`
 
 ## Reference & Acknowledgement:
 

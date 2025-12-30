@@ -1,7 +1,7 @@
 import argparse
 import os
 from transformers import AutoTokenizer, DataCollatorWithPadding
-from transformers import AutoModelForSequenceClassification, Trainer, TrainingArguments
+from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
 import datasets
 
 
@@ -11,10 +11,10 @@ parser = argparse.ArgumentParser(description="train models for neural search tas
 parser.add_argument('--data_path', default="../../benchmarks/msmarco-passage-ranking/data/processed/train/ms_train.jsonl", type=str)
 parser.add_argument('--batch_size', default=128, type=int)
 parser.add_argument('--lr', default=5e-6, type=float)
-parser.add_argument('--epochs', default=2, type=int)
+parser.add_argument('--num_epochs', default=2, type=int)
 parser.add_argument('--save_steps', default=20_000, type=int)
 parser.add_argument('--fine_tune_all', action='store_true')
-parser.add_argument('--resume_from_checkpoint', default=True, type=bool)
+parser.add_argument('--no_resume', action='store_true')
 parser.add_argument('--output_dir', default="./checkpoints/bert-msmarco", type=str)
 args = parser.parse_args()
 
@@ -50,7 +50,7 @@ def train(args):
         do_train=True,
         per_device_train_batch_size=args.batch_size,
         learning_rate=args.lr,
-        num_train_epochs=args.epochs,
+        num_train_epochs=args.num_epochs,
         warmup_ratio=0.1,
         logging_steps=2_000,
         save_steps=args.save_steps,
@@ -63,7 +63,7 @@ def train(args):
         train_dataset=dataset,
         data_collator=collator
     )
-    trainer.train(resume_from_checkpoint=args.resume_from_checkpoint)
+    trainer.train(resume_from_checkpoint=not args.no_resume)
 
 def main():
     train(args)

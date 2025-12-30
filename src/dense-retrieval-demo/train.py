@@ -18,11 +18,11 @@ parser.add_argument('--model_config', default="./data/pretrained_bert/config.jso
 parser.add_argument('--model_weights', default="./data/pretrained_bert/pytorch_model.bin", type=str)
 parser.add_argument('--batch_size', default=128, type=int)
 parser.add_argument('--lr', default=2e-5, type=float)
-parser.add_argument('--epochs', default=2, type=int)
+parser.add_argument('--num_epochs', default=2, type=int)
 parser.add_argument('--fine_tune_all', action='store_true')
 parser.add_argument('--logging_steps', default=2_000, type=int)
 parser.add_argument('--save_steps', default=20_000, type=int)
-parser.add_argument('--resume_from_checkpoint', default=True, type=bool)
+parser.add_argument('--no_resume', action='store_true')
 parser.add_argument('--output_dir', default="./checkpoints/custom-bert-msmarco", type=str)
 args = parser.parse_args()
 
@@ -80,7 +80,7 @@ def train(args):
     global_step = 0
     running_loss = 0
 
-    if args.resume_from_checkpoint:
+    if not args.no_resume:
         ckpts = glob.glob(os.path.join(SCRIPT_DIR, args.output_dir, "ckpt_step*.pt"))
         if ckpts:
             latest = max(ckpts, key=extract_step)
@@ -89,20 +89,18 @@ def train(args):
     with open(args.data_path, 'rb') as f:
         total_lines = sum(1 for _ in f)
     total_samples = total_lines * 2
-    total_batches = (total_samples + args.batch_size - 1) // args.batch_size * args.epochs
+    total_batches = (total_samples + args.batch_size - 1) // args.batch_size * args.num_epochs
 
-    epoch_steps_done = global_step % (total_batches // args.epochs)
+    epoch_steps_done = global_step % (total_batches // args.num_epochs)
     global_step -= epoch_steps_done
-    # resume_pbar = tqdm(total=epoch_steps_done, desc='Resuming')
     pbar = tqdm(total=total_batches, initial=global_step, desc='Training')
 
-    for epoch in range(start_epoch, args.epochs):
+    for epoch in range(start_epoch, args.num_epochs):
         for batch in dataloader:
             global_step += 1
 
             if epoch_steps_done:
                 epoch_steps_done -= 1
-                # resume_pbar.update(1)
                 pbar.update(1)
                 continue
 
@@ -122,7 +120,7 @@ def train(args):
 
             if global_step % args.logging_steps == 0:
                 logged_loss = running_loss / args.logging_steps
-                print(f"Epoch [{epoch + 1}/{args.epochs}], Step [{global_step}], Logged Loss: {logged_loss:.4f}")
+                print(f"Epoch [{epoch + 1}/{args.num_epochs}], Step [{global_step}], Logged Loss: {logged_loss:.4f}")
                 running_loss = 0
 
             if global_step % args.save_steps == 0:
