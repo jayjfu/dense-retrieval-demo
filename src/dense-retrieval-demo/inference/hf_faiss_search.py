@@ -1,8 +1,7 @@
 import argparse
 import os
 import torch
-from transformers import AutoTokenizer
-from transformers import AutoModel
+from transformers import AutoTokenizer, AutoModel
 import datasets
 import pandas as pd
 from tqdm import tqdm
@@ -12,16 +11,17 @@ import faiss
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser(description="encoding for inference")
-parser.add_argument('--saved_model', default="../checkpoints/bert-msmarco/checkpoint-5000", type=str)
+parser.add_argument('--saved_model', default="../checkpoints/bert-msmarco/checkpoint-1243152", type=str)
 parser.add_argument('--max_length', default=128, type=int)
 parser.add_argument('--file_path', default="../../../benchmarks/msmarco-passage-ranking/data/", type=str)
 parser.add_argument('--file_name', default="queries.dev.tsv", type=str)
 parser.add_argument('--qrels_dev_file', default="qrels.dev.tsv", type=str)
 parser.add_argument('--index_path', default="../../../benchmarks/msmarco-passage-ranking/index/", type=str)
-parser.add_argument('--index_file', default="hf_passages_100k_index.faiss", type=str)
+parser.add_argument('--index_file', default="hf_passages_index.faiss", type=str)
 parser.add_argument('--eval_path', default="../../../benchmarks/msmarco-passage-ranking/eval/", type=str)
 parser.add_argument('--prediction_file', default="hf_bert.ranking_results.dev.tsv", type=str)
-parser.add_argument('--top_k', default=10, type=str)
+parser.add_argument('--top_k', default=10, type=int)
+parser.add_argument('--index_nprobe', default=8, type=int)
 args = parser.parse_args()
 
 def main():
@@ -35,11 +35,15 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     model = AutoModel.from_pretrained(os.path.join(str(SCRIPT_DIR), args.saved_model))
     model.eval()
+    model.to(device)
 
     index_path = os.path.join(SCRIPT_DIR, args.index_path, args.index_file)
     index = faiss.read_index(index_path)
+    index.nprobe = args.index_nprobe # search more clusters
 
     output_dir = os.path.join(str(SCRIPT_DIR), args.eval_path)
     os.makedirs(output_dir, exist_ok=True)
@@ -50,12 +54,14 @@ def main():
             qid, query_text = row['qid'], row['query_text']
 
             tokenized_query = tokenizer(query_text, padding=True, truncation=True, max_length=args.max_length, return_tensors='pt')
+            input_ids = tokenized_query['input_ids'].to(device)
+            attention_mask = tokenized_query['attention_mask'].to(device)
             with torch.no_grad():
-                outputs = model(input_ids=tokenized_query['input_ids'], attention_mask=tokenized_query['attention_mask'])
+                outputs = model(input_ids=input_ids, attention_mask=attention_mask)
 
             # Average pooling
-            query_emb = (outputs.last_hidden_state * tokenized_query['attention_mask'].unsqueeze(-1)).sum(1)
-            query_emb = query_emb / tokenized_query['attention_mask'].sum(1, keepdim=True)
+            query_emb = (outputs.last_hidden_state * attention_mask.unsqueeze(-1)).sum(1)
+            query_emb = query_emb / attention_mask.sum(1, keepdim=True)
 
             D, I = index.search(query_emb.cpu().numpy(), k=args.top_k)
 

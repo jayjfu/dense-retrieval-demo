@@ -53,12 +53,19 @@ dense-retrieval-demo
 ## Data Preparation
 
 ### MS MARCO Passage Ranking
+Download dataset:
 ```bash
 cd benchmarks/msmarco-passage-ranking
 bash get_dataset.sh
 ```
 
+Data preprocessing (tokenization):
+```bash
+python tokenizer.py
+```
+
 ### Pretrained BERT weights
+Download pretrained model:
 ```bash
 bash get_pretrained.sh
 ```
@@ -101,6 +108,8 @@ python ./src/dense-retrieval-demo/inference/hf_encoding.py
 # FAISS search w/ HF
 python ./src/dense-retrieval-demo/inference/hf_faiss_search.py
 ```
+
+Use custom classification model: 
 ```bash
 # Indexing (custom)
 python -m inference.encoding
@@ -114,7 +123,7 @@ For rerank only,
 
 *(Work in Progress)*
 ```bash
-# To be implemented
+# TODO
 ```
 
 ## Evaluation
@@ -128,9 +137,9 @@ MRR@10 (Dev) results of  on the MS MARCO passage ranking task: *(Work in Progres
 
 | Model                                | Retrieval + Rerank | Rerank Only |
 |--------------------------------------|--------------------|-------------|
-| BERT_base (classifier head only)     | -                  | -           |
+| BERT_base (classifier head only)     | 0.005              | -           |
 | BERT_base (encoder and classifier)   | -                  | -           |
-| custom_BERT (classifier head only)   | -                  | -           |
+| custom_BERT (classifier head only)   | 0.000              | -           |
 | custom_BERT (encoder and classifier) | -                  | -           |
 
 Note: Here, we use the small training set `triples.train.small.tar.gz` and set max_length=128 to improve training performance.
