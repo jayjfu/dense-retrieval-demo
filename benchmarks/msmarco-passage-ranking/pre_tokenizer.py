@@ -4,7 +4,10 @@ from transformers import AutoTokenizer
 import json
 from tqdm import tqdm
 from multiprocessing import Pool, set_start_method, current_process
+from bert_tokenization import BertTokenizer
 
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser(description="prepare jsonl data for msmacro passage ranking")
 parser.add_argument('--hf_tokenizer_name', default='bert-base-uncased', type=str)
@@ -12,26 +15,42 @@ parser.add_argument('--data_dir', default="./data", type=str)
 parser.add_argument('--train_file', default="triples.train.small.tsv", type=str)
 parser.add_argument('--max_length', default=128, type=int)
 parser.add_argument('--output_path', default="./data/processed", type=str)
-parser.add_argument('--output_file', default="ms_train.jsonl", type=str)
+parser.add_argument('--output_file', default="custom_ms_train.jsonl", type=str)
 parser.add_argument('--num_processes', default=8, type=int)
 parser.add_argument('--mp_chunk_size', default=100_000, type=int)
+parser.add_argument('--custom_tokenizer', action='store_true')
+parser.add_argument('--vocab_file', default="./data/pretrained_bert/vocab.txt", type=str)
 args = parser.parse_args()
 
 def process_line(line):
     query, pos, neg = line.strip().split('\t')
-    encoded = tokenizer([query, pos, neg], truncation=True, max_length=max_length)
-    data = {
-        "query": encoded['input_ids'][0],
-        "positive": encoded['input_ids'][1],
-        "negative": encoded['input_ids'][2]
-    }
+    if args.custom_tokenizer:
+        query_input_ids, _, _ = tokenizer.encode(query, truncation=True, max_length=max_length)
+        pos_input_ids, _, _ = tokenizer.encode(query, truncation=True, max_length=max_length)
+        neg_input_ids, _, _ = tokenizer.encode(query, truncation=True, max_length=max_length)
+
+        data = {
+            "query": query_input_ids,
+            "positive": pos_input_ids,
+            "negative": neg_input_ids
+        }
+    else:
+        encoded = tokenizer([query, pos, neg], truncation=True, max_length=max_length)
+        data = {
+            "query": encoded['input_ids'][0],
+            "positive": encoded['input_ids'][1],
+            "negative": encoded['input_ids'][2]
+        }
 
     with open(output_shard_file, 'a') as f_out:
         f_out.write(json.dumps(data) + '\n')
 
 def init_worker(tokenizer_name, max_length_, output_dir_):
     global tokenizer, max_length, output_shard_file
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    if args.custom_tokenizer:
+        tokenizer = BertTokenizer(os.path.join(SCRIPT_DIR, args.vocab_file))
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
     max_length = max_length_
     pid = current_process().pid
     output_shard_file = os.path.join(output_dir_, f"ms_train_shard_{pid}.jsonl")

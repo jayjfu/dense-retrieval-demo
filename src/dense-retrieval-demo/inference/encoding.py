@@ -65,6 +65,7 @@ def main():
             last_hidden_state = outputs[0]
             embeddings = (last_hidden_state * attention_mask.unsqueeze(-1)).sum(1)
             embeddings = embeddings / attention_mask.sum(1, keepdim=True)
+            embeddings = faiss.normalize_L2(embeddings)  # l2 norm
 
             # all_embeddings.append(embeddings.cpu().numpy())
             end_idx = min(start_idx + batch_size, len(passages))
@@ -78,7 +79,7 @@ def main():
     embeddings = gen_embeddings(passages, batch_size=args.batch_size)
 
     dim = len(embeddings[0])
-    index = faiss.index_factory(dim, "IVF4096,PQ32")
+    index = faiss.index_factory(dim, "IVF4096,Flat", faiss.METRIC_INNER_PRODUCT)  # PQ32
 
     bs = 5_000_000
     train_size = min(bs, len(embeddings))

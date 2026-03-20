@@ -61,7 +61,10 @@ bash get_dataset.sh
 
 Data preprocessing (tokenization):
 ```bash
-python tokenizer.py
+python tokenizer.py \
+  --max_length 128 \
+  --num_processes 8 \
+  --mp_chunk_size 100_000
 ```
 
 ### Pretrained BERT weights
@@ -97,33 +100,51 @@ python ./src/dense-retrieval-demo/train.py \
   --no_resume
 ```
 
+Note: Bi-Encoder or Cross-Encoder?? + full fine-tuning or classifier head tuning??
+
 ## Inference
 
 ### Retrieval + Rerank
 End-to-end retrieval & rerank:
 ```bash
 # Indexing w/ HF
-python ./src/dense-retrieval-demo/inference/hf_encoding.py
+python ./src/dense-retrieval-demo/inference/hf_encoding.py \
+  --batch_size 1024 \
+  --max_length 128
 
 # FAISS search w/ HF
-python ./src/dense-retrieval-demo/inference/hf_faiss_search.py
+python ./src/dense-retrieval-demo/inference/hf_faiss_search.py \
+  --batch_size 1024 \
+  --max_length 128 \
+  --top_k 10 \
+  --index_nprobe 8
 ```
 
 Use custom classification model: 
 ```bash
 # Indexing (custom)
-python -m inference.encoding
+python -m inference.encoding \
+  --batch_size 1024 \
+  --max_length 128
 
 # FAISS Search (custom)
-python -m inference.faiss_search
+python -m inference.faiss_search \
+  --batch_size 1024 \
+  --max_length 128 \
+  --tok_k 10 \
+  --index_nprobe 8
 ```
 
-### Rerank Only
-For rerank only,
+Note: Bi-Encoder or Cross-Encoder??
 
-*(Work in Progress)*
+### Reranking Only
+To rerank the official top-1000 results produced by BM25, add `--reranking_only` flag during faiss search:
+
 ```bash
-# TODO
+# FAISS search (reranking only)
+python ./src/dense-retrieval-demo/inference/hf_faiss_search.py --reranking_only
+# Or
+python -m inference.faiss_search --reranking_only
 ```
 
 ## Evaluation
@@ -135,14 +156,25 @@ python ./benchmarks/msmarco-passage-ranking/eval/ms_marco_eval.py $reference_fil
 
 MRR@10 (Dev) results of  on the MS MARCO passage ranking task: *(Work in Progress)*
 
-| Model                                | Retrieval + Rerank | Rerank Only |
-|--------------------------------------|--------------------|-------------|
-| BERT_base (classifier head only)     | 0.005              | -           |
-| BERT_base (encoder and classifier)   | -                  | -           |
-| custom_BERT (classifier head only)   | 0.000              | -           |
-| custom_BERT (encoder and classifier) | -                  | -           |
+- Retrieval + Reranking:
 
-Note: Here, we use the small training set `triples.train.small.tar.gz` and set max_length=128 to improve training performance.
+| Backbone    | Fine-tuning Scope  | Encoder Type  | Score |
+|-------------|--------------------|---------------|-------|
+| BERT_base   | Full fine-tuning   | Bi-encoder    | -     |
+| custom_BERT | Full fine-tuning   | Bi-encoder    | -     |
+
+- Reranking Only:
+
+| Backbone    | Fine-tuning Scope  | Encoder Type  | Score |
+|-------------|--------------------|---------------|-------|
+| BERT_base   | Classifier head    | Cross-encoder | -     |
+| BERT_base   | Full fine-tuning   | Cross-encoder | -     |
+| BERT_base   | Full fine-tuning   | Bi-encoder    | -     |
+| custom_BERT | Classifier head    | Cross-encoder | -     |
+| custom_BERT | Full fine-tuning   | Cross-encoder | -     |
+| custom_BERT | Full fine-tuning   | Bi-encoder    | -     |
+
+Note: We use the smaller training set (`triples.train.small.tar.gz`) to speed up training.
 
 ## Scripts:
 

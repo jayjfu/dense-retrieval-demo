@@ -2,7 +2,7 @@ import argparse
 import os
 import torch
 from dataset import TokenizedTextPairDataset, pad_to_max_length
-from models import BertForSequenceClassification, BertConfig, BertModel
+from models import BertForSequenceClassification, BertConfig, BertModel, BiEncoderModel
 from torch.utils.data import DataLoader
 import json
 from tqdm import tqdm
@@ -13,12 +13,13 @@ import re
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 parser = argparse.ArgumentParser(description="train models for neural search task")
-parser.add_argument('--data_path', default="../../benchmarks/msmarco-passage-ranking/data/processed/train/ms_train.jsonl", type=str)
+parser.add_argument('--data_path', default="../../benchmarks/msmarco-passage-ranking/data/processed/train/custom_ms_train.jsonl", type=str)
 parser.add_argument('--model_config', default="./data/pretrained_bert/config.json", type=str)
 parser.add_argument('--model_weights', default="./data/pretrained_bert/pytorch_model.bin", type=str)
 parser.add_argument('--batch_size', default=128, type=int)
-parser.add_argument('--lr', default=2e-5, type=float)
-parser.add_argument('--num_epochs', default=2, type=int)
+parser.add_argument('--lr', default=5e-6, type=float)
+parser.add_argument('--num_epochs', default=1, type=int)
+parser.add_argument('--model_type', default="cross-encoder", choices=["cross-encoder", "bi-encoder"])
 parser.add_argument('--fine_tune_all', action='store_true')
 parser.add_argument('--logging_steps', default=2_000, type=int)
 parser.add_argument('--save_steps', default=20_000, type=int)
@@ -57,11 +58,16 @@ def extract_step(path):
 
 def train(args):
     data_path = os.path.join(SCRIPT_DIR, args.data_path)
-    dataset = TokenizedTextPairDataset(data_path)
+    dataset = TokenizedTextPairDataset(data_path, model_type=args.model_type)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, collate_fn=pad_to_max_length)
 
     model_config = BertConfig(**json.load(open(os.path.join(SCRIPT_DIR, args.model_config))))
-    model = BertForSequenceClassification(BertModel(model_config))
+
+    if args.model_type == "cross-encoder":
+        model = BertForSequenceClassification(BertModel(model_config))
+    else:
+        bert = BertModel(model_config)
+        model = BiEncoderModel(bert)
 
     model_weights = os.path.join(str(SCRIPT_DIR), args.model_weights)
     state_dict = torch.load(model_weights, map_location='cpu')
@@ -69,13 +75,18 @@ def train(args):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
+
     if not args.fine_tune_all:
+        if args.model_type == "bi-encoder":
+            raise ValueError("Bi-Encoder can only be used in --fine_tune_all mode")
+
         for param in model.bert.parameters():
             param.requires_grad = False
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = None
     scaler = torch.amp.GradScaler('cuda')
+
     start_epoch = 0
     global_step = 0
     running_loss = 0
@@ -88,6 +99,7 @@ def train(args):
 
     with open(args.data_path, 'rb') as f:
         total_lines = sum(1 for _ in f)
+
     total_samples = total_lines * 2
     total_batches = (total_samples + args.batch_size - 1) // args.batch_size * args.num_epochs
 
@@ -104,11 +116,11 @@ def train(args):
                 pbar.update(1)
                 continue
 
-            input_ids, labels = batch['input_ids'].to(device), batch['labels'].to(device)
+            batch = {k: v.to(device) for k, v in batch.items()}
 
             model.train()
             with torch.amp.autocast('cuda'):
-                outputs = model(input_ids, labels)
+                outputs = model(**batch)
                 loss = outputs['loss']
 
             optimizer.zero_grad()

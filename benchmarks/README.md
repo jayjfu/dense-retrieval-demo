@@ -7,9 +7,10 @@
 cd msmarco-passage-ranking
 bash get_dataset.sh
 ```
+
 - Step2: tokenization: 
 ```bash
-python tokenizer.py
+python hf_pre_tokenizer.py # add --custom_tokenizer to use custom tokenizer
 ```
 
 ## Evaluation

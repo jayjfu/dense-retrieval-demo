@@ -1,5 +1,7 @@
 import argparse
 import os
+from dataset import HFBiEncoderCollator
+from models import HFBiEncoderModel
 from transformers import AutoTokenizer, DataCollatorWithPadding
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
 import datasets
@@ -11,8 +13,10 @@ parser = argparse.ArgumentParser(description="train models for neural search tas
 parser.add_argument('--data_path', default="../../benchmarks/msmarco-passage-ranking/data/processed/train/ms_train.jsonl", type=str)
 parser.add_argument('--batch_size', default=128, type=int)
 parser.add_argument('--lr', default=5e-6, type=float)
-parser.add_argument('--num_epochs', default=2, type=int)
+parser.add_argument('--num_epochs', default=1, type=int)
+parser.add_argument('--logging_steps', default=2_000, type=int)
 parser.add_argument('--save_steps', default=20_000, type=int)
+parser.add_argument('--model_type', default="cross-encoder", choices=["cross-encoder", "bi-encoder"])
 parser.add_argument('--fine_tune_all', action='store_true')
 parser.add_argument('--no_resume', action='store_true')
 parser.add_argument('--output_dir', default="./checkpoints/bert-msmarco", type=str)
@@ -23,25 +27,48 @@ def train(args):
     dataset = datasets.load_dataset('json', data_files=data_files)
     dataset = dataset['train']
 
-    def gen_pairs(batch):
-        input_ids, labels = [], []
+    if args.model_type == "cross-encoder":
+        def gen_cross_pairs(batch):
+            input_ids, labels = [], []
+            for q, p, n in zip(batch['query'], batch['positive'], batch['negative']):
+                input_ids.append(q + p[1:])  # [CLS] query_tokens [SEP] passage_tokens [SEP]
+                labels.append(1)
+                input_ids.append(q + n[1:])
+                labels.append(0)
 
-        for q, p, n in zip(batch['query'], batch['positive'], batch['negative']):
-            input_ids.append(q + p)
-            labels.append(1)
-            input_ids.append(q + n)
-            labels.append(0)
+            return {"input_ids": input_ids, "label": labels}
 
-        return {"input_ids": input_ids, "label": labels}
+        dataset = dataset.map(gen_cross_pairs, batched=True, remove_columns=dataset.column_names)
+    else:
+        def gen_bi_pairs(batch):
+            q_input_ids, p_input_ids, labels = [], [], []
+            for q, p, n in zip(batch['query'], batch['positive'], batch['negative']):
+                q_input_ids.append(q)
+                p_input_ids.append(p)
+                labels.append(1)
+                q_input_ids.append(q)
+                p_input_ids.append(n)
+                labels.append(0)
 
-    dataset = dataset.map(gen_pairs, batched=True, remove_columns=dataset.column_names)
+            return {"q_input_ids": q_input_ids, "p_input_ids": p_input_ids, "label": labels}
+
+        dataset = dataset.map(gen_bi_pairs, batched=True, remove_columns=dataset.column_names)
+
     dataset = dataset.with_format(type='torch')
 
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
-    collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
-    model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
+    if args.model_type=="cross-encoder":
+        model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2)
+        collator = DataCollatorWithPadding(tokenizer=tokenizer)
+    else:
+        model = HFBiEncoderModel.from_pretrained("bert-base-uncased")
+        collator = HFBiEncoderCollator(tokenizer=tokenizer)
+
     if not args.fine_tune_all:
+        if args.model_type == "bi-encoder":
+            raise ValueError("Bi-Encoder can only be used in --fine_tune_all mode")
+
         for param in model.base_model.parameters():
             param.requires_grad = False
 
@@ -52,7 +79,7 @@ def train(args):
         learning_rate=args.lr,
         num_train_epochs=args.num_epochs,
         warmup_ratio=0.1,
-        logging_steps=2_000,
+        logging_steps=args.logging_steps,
         save_steps=args.save_steps,
         fp16=True,
         dataloader_num_workers=2,

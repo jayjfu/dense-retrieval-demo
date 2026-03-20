@@ -4,8 +4,9 @@ import csv
 
 
 class TokenizedTextPairDataset(IterableDataset):
-    def __init__(self, data_path, limit=None):
+    def __init__(self, data_path, model_type="cross-encoder", limit=None):
         self.data_path = data_path
+        self.model_type = model_type
         self.limit = limit
 
     def __iter__(self):
@@ -15,10 +16,14 @@ class TokenizedTextPairDataset(IterableDataset):
                     break
 
                 item = json.loads(line)
-                query, pos, neg = item['query'], item['positive'], item['negative']
+                query_ids, pos_ids, neg_ids = item['query'], item['positive'], item['negative']
 
-                yield {"input_ids": query + pos, "label": 1}
-                yield {"input_ids": query + neg, "label": 0}
+                if self.model_type == "cross-encoder":
+                    yield {"input_ids": query_ids + pos_ids[1:], "label": 1}  # [CLS] query_tokens [SEP] passage_tokens [SEP]
+                    yield {"input_ids": query_ids + neg_ids[1:], "label": 0}
+                else:
+                    yield {"query_input_ids": query_ids, "passage_input_ids": pos_ids, "label": 1}
+                    yield {"query_input_ids": query_ids, "passage_input_ids": neg_ids, "label": 0}
 
 class PassageDataset(Dataset):
     def __init__(self, data_path, limit=None):

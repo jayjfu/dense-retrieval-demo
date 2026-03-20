@@ -5,7 +5,7 @@ import math
 
 class BertConfig:
     def __init__(self, **kwargs):
-        # default settings
+        # Default settings
         self.vocab_size = kwargs.pop('vocab_size', 30522)
         self.hidden_size = kwargs.pop('hidden_size', 768)
         self.num_hidden_layers = kwargs.pop('num_hidden_layers', 12)
@@ -17,8 +17,7 @@ class BertConfig:
         self.attention_probs_dropout_prob = kwargs.pop('attention_probs_dropout_prob', 0.1)
         self.layer_norm_eps = kwargs.pop('layer_norm_eps', 1e-12)
 
-        # extra HF config keys that we ignore gracefully
-        # (just store them so loading weights won't break)
+        # Extra HF config keys that we ignore gracefully (just store them so loading weights won't break)
         for key, value in kwargs.items():
             setattr(self, key, value)
 
