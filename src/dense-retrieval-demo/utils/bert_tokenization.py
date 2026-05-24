@@ -60,7 +60,7 @@ class BertTokenizer:
             tokens.extend(self.tokenize_wordpiece(word))
         return tokens
 
-    def encode(self, text, truncation=True, max_length=512, padding=False):
+    def encode(self, text, truncation=True, max_length=128, padding=False):
         tokens = [self.cls_token]
         wordpiece_tokens = self.tokenize(text)
 

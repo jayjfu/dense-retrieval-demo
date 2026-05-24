@@ -15,7 +15,7 @@ parser.add_argument('--data_dir', default="./data", type=str)
 parser.add_argument('--train_file', default="triples.train.small.tsv", type=str)
 parser.add_argument('--max_length', default=128, type=int)
 parser.add_argument('--output_path', default="./data/processed", type=str)
-parser.add_argument('--output_file', default="custom_ms_train.jsonl", type=str)
+parser.add_argument('--output_file', default="ms_train.jsonl", type=str)
 parser.add_argument('--num_processes', default=8, type=int)
 parser.add_argument('--mp_chunk_size', default=100_000, type=int)
 parser.add_argument('--custom_tokenizer', action='store_true')
@@ -94,7 +94,8 @@ def prepare_json(args):
                 pass
 
     # Merge
-    merge_shards(output_dir, args.output_file)
+    output_file = 'custom_' + args.output_file if args.custom_tokenizer else args.output_file
+    merge_shards(output_dir, output_file)
 
 def main():
     set_start_method('spawn', force=True)

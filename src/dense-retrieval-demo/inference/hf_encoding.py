@@ -19,6 +19,9 @@ parser.add_argument('--index_path', default="../../../benchmarks/msmarco-passage
 parser.add_argument('--index_file', default="hf_passages_index.faiss", type=str)
 args = parser.parse_args()
 
+def l2_normalize(x):
+    return x / np.linalg.norm(x, axis=1, keepdims=True)
+
 def main():
     dataset = datasets.load_dataset(
         'csv',
@@ -36,6 +39,7 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    # model = AutoModel.from_pretrained('bert-base-uncased')  # baseline
     model = AutoModel.from_pretrained(os.path.join(str(SCRIPT_DIR), args.saved_model))
     model.eval()
     model.to(device)
@@ -49,9 +53,9 @@ def main():
         # Average pooling
         embeddings = (outputs.last_hidden_state * attention_mask.unsqueeze(-1)).sum(1)
         embeddings = embeddings / attention_mask.sum(1, keepdim=True)
-        embeddings = faiss.normalize_L2(embeddings)  # l2 norm
+        embeddings = l2_normalize(embeddings.cpu().numpy())  # l2 norm
 
-        return {"embeddings": embeddings.cpu().numpy()}
+        return {"embeddings": embeddings}
 
     emb_dataset = dataset.map(gen_embeddings, batched=True, batch_size=args.batch_size)
 

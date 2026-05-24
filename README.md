@@ -3,23 +3,24 @@
 
 ### This demo showcases a simple workflow for **training dense retrieval models** and **performing inference** with them.
 
-*(Work in Progress: This repository is currently under active development.)*
-
 ## Introduction
 
 This repository is compatible with datasets in the format like <u>MS MARCO Passage Ranking</u> dataset. We use a **standard BERT model** for case study.
 
+The project is implemented in two ways: using HuggingFace’s Transformers library and a custom model implementation for better understanding of the details. It also supports two model setups: a bi-encoder for efficient retrieval and a cross-encoder for more accurate ranking.
+
 ## Project Structure
 ```
-dense-retrieval-demo
-├── README.MD
+dense-retrieval-demo/
 ├── benchmarks
-│   ├── README.md
-│   └── msmarco-passage-ranking
-│       ├── eval
-│       │   └── ms_marco_eval.py
-│       ├── get_dataset.sh
-│       └── tokenizer.py
+│   ├── msmarco-passage-ranking
+│   │   ├── bert_tokenization.py
+│   │   ├── eval
+│   │   │   └── ms_marco_eval.py
+│   │   ├── get_dataset.sh
+│   │   └── pre_tokenizer.py
+│   └── README.md
+├── README.md
 ├── requirements.txt
 ├── scripts
 │   ├── evaluation.sh
@@ -28,25 +29,25 @@ dense-retrieval-demo
 │   └── training_pipeline.sh
 └── src
     └── dense-retrieval-demo
+        ├── checkpoints
         ├── dataset
-        │   ├── __init__.py
         │   ├── collator.py
-        │   └── dataset.py
+        │   ├── dataset.py
+        │   └── hf_collator.py
         ├── get_pretrained.sh
         ├── hf_train.py
         ├── inference
-        │   ├── __init__.py
         │   ├── encoding.py
-        │   ├── faiss_search.py
         │   ├── hf_encoding.py
-        │   └── hf_faiss_search.py
+        │   ├── hf_vector_search.py
+        │   └── vector_search.py
         ├── models
-        │   ├── __init__.py
         │   ├── bert_backbone.py
-        │   └── bert_classifier.py
+        │   ├── bert_classifier.py
+        │   ├── biencoder_bert.py
+        │   └── hf_biencoder_bert.py
         ├── train.py
         └── utils
-            ├── __init__.py
             └── bert_tokenization.py
 ```
 
@@ -100,7 +101,7 @@ python ./src/dense-retrieval-demo/train.py \
   --no_resume
 ```
 
-Note: Bi-Encoder or Cross-Encoder?? + full fine-tuning or classifier head tuning??
+Note: Use `--model_type` to select from bi-encoder and cross-encoder
 
 ## Inference
 
@@ -135,8 +136,6 @@ python -m inference.faiss_search \
   --index_nprobe 8
 ```
 
-Note: Bi-Encoder or Cross-Encoder??
-
 ### Reranking Only
 To rerank the official top-1000 results produced by BM25, add `--reranking_only` flag during faiss search:
 
@@ -158,21 +157,25 @@ MRR@10 (Dev) results of  on the MS MARCO passage ranking task: *(Work in Progres
 
 - Retrieval + Reranking:
 
-| Backbone    | Fine-tuning Scope  | Encoder Type  | Score |
-|-------------|--------------------|---------------|-------|
-| BERT_base   | Full fine-tuning   | Bi-encoder    | -     |
-| custom_BERT | Full fine-tuning   | Bi-encoder    | -     |
+| Backbone    | Fine-tuning Scope | Encoder Type  | Score |
+|-------------|-------------------|---------------|-------|
+| BERT_base   | No fine-tuning    | Bi-encoder    | -     |
+| custom_BERT | No fine-tuning    | Bi-encoder    | -     |
+| BERT_base   | Full fine-tuning  | Bi-encoder    | -     |
+| custom_BERT | Full fine-tuning  | Bi-encoder    | -     |
 
 - Reranking Only:
 
-| Backbone    | Fine-tuning Scope  | Encoder Type  | Score |
-|-------------|--------------------|---------------|-------|
-| BERT_base   | Classifier head    | Cross-encoder | -     |
-| BERT_base   | Full fine-tuning   | Cross-encoder | -     |
-| BERT_base   | Full fine-tuning   | Bi-encoder    | -     |
-| custom_BERT | Classifier head    | Cross-encoder | -     |
-| custom_BERT | Full fine-tuning   | Cross-encoder | -     |
-| custom_BERT | Full fine-tuning   | Bi-encoder    | -     |
+| Backbone    | Fine-tuning Scope | Encoder Type  | Score |
+|-------------|-------------------|---------------|-------|
+| BERT_base   | Classifier head   | Cross-encoder | -     |
+| BERT_base   | Full fine-tuning  | Cross-encoder | -     |
+| BERT_base   | No fine-tuning    | Bi-encoder    | -     |
+| BERT_base   | Full fine-tuning  | Bi-encoder    | -     |
+| custom_BERT | Classifier head   | Cross-encoder | -     |
+| custom_BERT | Full fine-tuning  | Cross-encoder | -     |
+| custom_BERT | No fine-tuning    | Bi-encoder    | -     |
+| custom_BERT | Full fine-tuning  | Bi-encoder    | -     |
 
 Note: We use the smaller training set (`triples.train.small.tar.gz`) to speed up training.
 

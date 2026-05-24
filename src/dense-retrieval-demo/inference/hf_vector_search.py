@@ -22,7 +22,7 @@ parser.add_argument('--qrels_dev_file', default="qrels.dev.tsv", type=str)
 parser.add_argument('--index_path', default="../../../benchmarks/msmarco-passage-ranking/index/", type=str)
 parser.add_argument('--index_file', default="hf_passages_index.faiss", type=str)
 parser.add_argument('--eval_path', default="../../../benchmarks/msmarco-passage-ranking/eval/", type=str)
-parser.add_argument('--prediction_file', default="hf_bert.ranking_results.dev.tsv", type=str)
+parser.add_argument('--prediction_file', default="bert.ranking_results.dev.tsv", type=str)
 parser.add_argument('--top_k', default=10, type=int)
 parser.add_argument('--index_nprobe', default=10, type=int)
 parser.add_argument('--model_type', default="cross-encoder", choices=["cross-encoder", "bi-encoder"])
@@ -76,6 +76,7 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
 
+    # model_path = 'bert-base-uncased'  # baseline
     model_path = os.path.join(str(SCRIPT_DIR), args.saved_model)
 
     if args.model_type == "cross-encoder":

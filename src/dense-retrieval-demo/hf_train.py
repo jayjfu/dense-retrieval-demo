@@ -73,7 +73,7 @@ def train(args):
             param.requires_grad = False
 
     training_args = TrainingArguments(
-        output_dir=os.path.join(str(SCRIPT_DIR), args.output_dir),
+        output_dir=os.path.join(str(SCRIPT_DIR), args.output_dir, args.model_type),
         do_train=True,
         per_device_train_batch_size=args.batch_size,
         learning_rate=args.lr,

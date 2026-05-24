@@ -24,6 +24,9 @@ parser.add_argument('--index_path', default="../../../benchmarks/msmarco-passage
 parser.add_argument('--index_file', default="passages_index.faiss", type=str)
 args = parser.parse_args()
 
+def l2_normalize(x):
+    return x / np.linalg.norm(x, axis=1, keepdims=True)
+
 def main():
     passage_path = os.path.join(str(SCRIPT_DIR), args.file_path, args.file_name)
     passages = PassageDataset(passage_path, limit=None).data
@@ -34,6 +37,10 @@ def main():
 
     model_config = BertConfig(**json.load(open(os.path.join(SCRIPT_DIR, args.model_config))))
     model = BertForSequenceClassification(BertModel(model_config))
+    # model_weights = "../data/pretrained_bert/pytorch_model.bin"  # baseline
+    # model_weights = os.path.join(str(SCRIPT_DIR), model_weights)  # baseline
+    # state_dict = torch.load(model_weights, map_location='cpu')  # baseline
+    # model.load_state_dict(state_dict, strict=False)  # baseline
     checkpoint = torch.load(os.path.join(str(SCRIPT_DIR), args.model_weights), map_location=device) # 'cpu'
     model.load_state_dict(checkpoint['model'])
     model.eval()
@@ -52,7 +59,7 @@ def main():
 
             input_ids, attention_mask = [], []
             for p in batch:
-                p_input_ids, p_attention_mask, _ = tokenizer.encode(p, max_length=args.max_length)
+                p_input_ids, p_attention_mask, _ = tokenizer.encode(p, max_length=args.max_length, padding=True)
                 input_ids.append(p_input_ids)
                 attention_mask.append(p_attention_mask)
 
@@ -65,11 +72,11 @@ def main():
             last_hidden_state = outputs[0]
             embeddings = (last_hidden_state * attention_mask.unsqueeze(-1)).sum(1)
             embeddings = embeddings / attention_mask.sum(1, keepdim=True)
-            embeddings = faiss.normalize_L2(embeddings)  # l2 norm
+            embeddings = l2_normalize(embeddings.cpu().numpy())  # l2 norm
 
-            # all_embeddings.append(embeddings.cpu().numpy())
+            # all_embeddings.append(embeddings)
             end_idx = min(start_idx + batch_size, len(passages))
-            all_embeddings[start_idx:end_idx] = embeddings.cpu().numpy()
+            all_embeddings[start_idx:end_idx] = embeddings
             all_embeddings.flush()
 
             pbar.update(1)

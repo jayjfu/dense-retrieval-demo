@@ -10,7 +10,7 @@ bash get_dataset.sh
 
 - Step2: tokenization: 
 ```bash
-python hf_pre_tokenizer.py # add --custom_tokenizer to use custom tokenizer
+python pre_tokenizer.py --max_length 128 # add --custom_tokenizer to use custom tokenizer
 ```
 
 ## Evaluation

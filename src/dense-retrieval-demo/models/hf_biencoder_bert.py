@@ -4,7 +4,7 @@ from transformers import AutoModel
 
 
 class HFBiEncoderModel(torch.nn.Module):
-    def __init__(self, model_name="bert-base-uncased"):
+    def __init__(self, model_name='bert-base-uncased'):
         super().__init__()
         self.base_model = AutoModel.from_pretrained(model_name)
         self.config = self.base_model.config  # needed for Trainer compatibility

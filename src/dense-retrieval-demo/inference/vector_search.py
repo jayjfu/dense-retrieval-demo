@@ -25,7 +25,7 @@ parser.add_argument('--qrels_dev_file', default="qrels.dev.tsv", type=str)
 parser.add_argument('--index_path', default="../../../benchmarks/msmarco-passage-ranking/index/", type=str)
 parser.add_argument('--index_file', default="passages_index.faiss", type=str)
 parser.add_argument('--eval_path', default="../../../benchmarks/msmarco-passage-ranking/eval/", type=str)
-parser.add_argument('--prediction_file', default="bert.ranking_results.dev.tsv", type=str)
+parser.add_argument('--prediction_file', default="custom_bert.ranking_results.dev.tsv", type=str)
 parser.add_argument('--top_k', default=10, type=int)
 parser.add_argument('--index_nprobe', default=10, type=int)
 parser.add_argument('--model_type', default="cross-encoder", choices=["cross-encoder", "bi-encoder"])
@@ -73,7 +73,7 @@ def encode_texts(model, tokenizer, device, texts, batch_size=args.batch_size, ma
         batch = texts[i:i + batch_size]
         input_ids, attention_mask = [], []
         for p in batch:
-            p_input_ids, p_attention_mask, _ = tokenizer.encode(p, max_length=max_length)
+            p_input_ids, p_attention_mask, _ = tokenizer.encode(p, max_length=max_length, padding=True)
             input_ids.append(p_input_ids)
             attention_mask.append(p_attention_mask)
 
@@ -107,6 +107,10 @@ def main():
     model_config = BertConfig(**json.load(open(os.path.join(SCRIPT_DIR, args.model_config))))
     model = BertForSequenceClassification(BertModel(model_config))
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # model_weights = "../data/pretrained_bert/pytorch_model.bin"  # baseline
+    # model_weights = os.path.join(str(SCRIPT_DIR), model_weights)  # baseline
+    # state_dict = torch.load(model_weights, map_location='cpu')  # baseline
+    # model.load_state_dict(state_dict, strict=False)  # baseline
     checkpoint = torch.load(os.path.join(str(SCRIPT_DIR), args.model_weights), map_location=device) # 'cpu'
     model.load_state_dict(checkpoint['model'])
     model.eval()
@@ -143,23 +147,12 @@ def main():
                 if  args.model_type == "cross-encoder":
                     scores = score_cross(model, tokenizer, query_text, candidate_passages, device, args.batch_size, args.max_length)
                 else:
-                    # # Encode query
-                    # q_input, q_mask, _ = tokenizer.encode(query_text, max_length=args.max_length)
-                    # q_input = torch.tensor(q_input).unsqueeze(0).to(device)
-                    # q_mask = torch.tensor(q_mask).unsqueeze(0).to(device)
-                    #
-                    # with torch.no_grad():
-                    #     q_out = model.bert(input_ids=q_input, attention_mask=q_mask)
-                    #
-                    # last_hs = q_out[0]
-                    # query_emb = (last_hs * q_mask.unsqueeze(-1)).sum(1) / q_mask.sum(1, keepdim=True)
-
                     query_emb = encode_texts(model, tokenizer, device, [query_text], 1, args.max_length)
                     passage_embs = encode_texts(model, tokenizer, device, candidate_passages, args.batch_size, args.max_length)
 
                     query_emb = l2_normalize(query_emb)
                     passage_embs = l2_normalize(passage_embs)
-                    scores = np.dot(passage_embs, query_emb.cpu().numpy().T).squeeze()  # cosine sim
+                    scores = np.dot(passage_embs, query_emb.T).squeeze()  # cosine sim
 
                 # Rank
                 ranked_idx = scores.argsort()[::-1][:args.top_k]

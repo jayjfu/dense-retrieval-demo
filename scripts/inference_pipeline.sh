@@ -5,6 +5,6 @@ cd $PROJECT_ROOT || exit
 python -m inference.encoding
 
 # FAISS Search
-python -m inference.faiss_search
+python -m inference.vector_search
 
 cd - || exit
